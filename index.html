@@ -1,0 +1,1360 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planner</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: oklch(0.975 0.004 85);
+  --lane: oklch(0.945 0.006 85);
+  --surface: oklch(1 0 0);
+  --line: oklch(0.89 0.006 85);
+  --ink: oklch(0.22 0.01 270);
+  --ink-2: oklch(0.45 0.012 270);
+  --ink-3: oklch(0.56 0.01 270);
+  --accent: oklch(0.52 0.19 268);
+  --accent-ink: oklch(0.99 0 0);
+  --accent-soft: oklch(0.93 0.04 268);
+  --danger: oklch(0.55 0.2 25);
+  --ok: oklch(0.55 0.13 155);
+  --ok-soft: oklch(0.94 0.04 155);
+  --shadow: 0 1px 2px oklch(0.2 0.02 270 / 0.06), 0 4px 12px oklch(0.2 0.02 270 / 0.05);
+  --shadow-lift: 0 6px 14px oklch(0.2 0.02 270 / 0.12), 0 18px 40px oklch(0.2 0.02 270 / 0.10);
+  --area-l: 0.55; --area-c: 0.15; --chip-l: 0.94; --chip-c: 0.04; --chip-ink-l: 0.40;
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: oklch(0.19 0.008 270);
+    --lane: oklch(0.225 0.009 270);
+    --surface: oklch(0.27 0.01 270);
+    --line: oklch(0.33 0.01 270);
+    --ink: oklch(0.95 0.005 270);
+    --ink-2: oklch(0.78 0.01 270);
+    --ink-3: oklch(0.68 0.01 270);
+    --accent: oklch(0.70 0.15 268);
+    --accent-ink: oklch(0.18 0.02 270);
+    --accent-soft: oklch(0.32 0.06 268);
+    --danger: oklch(0.70 0.17 25);
+    --ok: oklch(0.72 0.13 155);
+    --ok-soft: oklch(0.31 0.05 155);
+    --shadow: 0 1px 2px oklch(0 0 0 / 0.3), 0 4px 12px oklch(0 0 0 / 0.2);
+    --shadow-lift: 0 8px 18px oklch(0 0 0 / 0.4), 0 20px 44px oklch(0 0 0 / 0.35);
+    --area-l: 0.74; --area-c: 0.13; --chip-l: 0.33; --chip-c: 0.06; --chip-ink-l: 0.88;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: oklch(0.19 0.008 270);
+  --lane: oklch(0.225 0.009 270);
+  --surface: oklch(0.27 0.01 270);
+  --line: oklch(0.33 0.01 270);
+  --ink: oklch(0.95 0.005 270);
+  --ink-2: oklch(0.78 0.01 270);
+  --ink-3: oklch(0.68 0.01 270);
+  --accent: oklch(0.70 0.15 268);
+  --accent-ink: oklch(0.18 0.02 270);
+  --accent-soft: oklch(0.32 0.06 268);
+  --danger: oklch(0.70 0.17 25);
+  --ok: oklch(0.72 0.13 155);
+  --ok-soft: oklch(0.31 0.05 155);
+  --shadow: 0 1px 2px oklch(0 0 0 / 0.3), 0 4px 12px oklch(0 0 0 / 0.2);
+  --shadow-lift: 0 8px 18px oklch(0 0 0 / 0.4), 0 20px 44px oklch(0 0 0 / 0.35);
+  --area-l: 0.74; --area-c: 0.13; --chip-l: 0.33; --chip-c: 0.06; --chip-ink-l: 0.88;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 14px/1.45 var(--font);
+  display: grid; grid-template-rows: auto 1fr; overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--accent-soft); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+* { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--line); }
+a:hover { text-decoration-color: currentColor; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* Top bar */
+header {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--bg);
+}
+.brand { font-weight: 650; font-size: 15px; letter-spacing: -0.01em; white-space: nowrap; }
+.brand span { color: var(--ink-3); font-weight: 500; }
+.tabs { display: flex; gap: 2px; padding: 3px; background: var(--lane); border-radius: 9px; }
+.tab {
+  height: 28px; padding: 0 12px; border: 0; border-radius: 7px; background: none; color: var(--ink-2);
+  font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: background .15s, color .15s;
+}
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.tab .n { font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.search {
+  display: flex; align-items: center; gap: 8px; flex: 1 1 120px; max-width: 200px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; height: 34px; color: var(--ink-3);
+}
+.search:focus-within { border-color: var(--accent); }
+.search input { border: 0; outline: 0; background: none; flex: 1; min-width: 0; color: var(--ink); }
+.search input::placeholder { color: var(--ink-3); }
+kbd {
+  font: 11px/1 var(--font); color: var(--ink-3); border: 1px solid var(--line);
+  border-radius: 4px; padding: 3px 5px; background: var(--bg);
+}
+.filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  --h: 270;
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+  font-size: 13px; transition: background .15s, border-color .15s, color .15s;
+}
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; background: oklch(var(--area-l) var(--area-c) var(--h)); }
+.chip:hover { border-color: var(--ink-3); }
+.chip[aria-pressed="true"] {
+  background: oklch(var(--chip-l) var(--chip-c) var(--h)); border-color: oklch(var(--area-l) var(--area-c) var(--h));
+  color: oklch(var(--chip-ink-l) 0.08 var(--h));
+}
+.spacer { flex: 1; }
+.status { font-size: 12px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+.status[data-s="ok"] { font-size: 0; gap: 0; }
+.status[data-s="saving"]::before { background: var(--accent); }
+.status[data-s="offline"]::before { background: var(--danger); }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
+  border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  transition: background .15s, border-color .15s, transform .1s; white-space: nowrap;
+}
+.btn:hover { border-color: var(--ink-3); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 550; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--ink-2); }
+.btn.ghost:hover { background: var(--lane); }
+.btn.icon { width: 34px; padding: 0; justify-content: center; }
+.btn.danger { color: var(--danger); }
+
+/* Board / Roadmap */
+main { overflow: auto; padding: 18px 20px 24px; }
+.board { display: flex; gap: 14px; align-items: flex-start; min-height: 100%; }
+.lane {
+  flex: 1 0 250px; max-width: 340px; background: var(--lane); border-radius: 14px; padding: 10px;
+  display: flex; flex-direction: column; max-height: calc(100vh - 110px);
+  transition: background .15s;
+}
+.lane.over { background: var(--accent-soft); }
+.lane.tray { flex: 0 0 230px; background: none; border: 1px dashed var(--line); }
+.lane-head { display: flex; align-items: center; gap: 8px; padding: 4px 6px 10px; }
+.lane-name {
+  font-weight: 600; font-size: 13px; letter-spacing: -0.005em; border: 0; background: none; padding: 2px 4px; margin-left: -4px;
+  border-radius: 5px; min-width: 0; flex: 1; outline: 0;
+}
+span.lane-name { padding-left: 0; margin-left: 0; color: var(--ink-2); }
+input.lane-name:hover { background: var(--bg); }
+input.lane-name:focus { background: var(--surface); box-shadow: 0 0 0 2px var(--accent); }
+.lane-del { flex: 0 0 auto; width: 24px; height: 24px; border: 0; border-radius: 6px; background: none; color: var(--ink-3); display: grid; place-items: center; }
+.lane-del:hover { background: var(--bg); color: var(--danger, #e5484d); }
+.lane-del .i { width: 14px; height: 14px; }
+.guide-pop {
+  position: fixed; top: 56px; right: 20px; width: min(420px, calc(100vw - 32px)); z-index: 15;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lift);
+  padding: 14px 16px; display: none;
+}
+.guide-pop.open { display: block; }
+.guide-pop h3 { margin: 0 0 8px; font-size: 14px; }
+.guide-pop ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--ink-2); font-size: 13px; }
+.count { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.phase-meta { padding: 0 6px 12px; display: grid; gap: 8px; }
+.lane-goal {
+  font-size: 12px; color: var(--ink-2); border: 0; background: none; outline: 0; padding: 2px 4px; margin-left: -4px;
+  border-radius: 5px; width: calc(100% + 4px); resize: none; line-height: 1.4; overflow: hidden; height: 2.9em;
+}
+.lane-goal::placeholder { color: var(--ink-3); }
+.lane-goal:hover { background: var(--bg); }
+.lane-goal:focus { background: var(--surface); box-shadow: 0 0 0 2px var(--accent); }
+.bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--ok); transition: width .25s cubic-bezier(.16,1,.3,1); }
+.bar-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.bar-row .bar { flex: 1; }
+.cards { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 8px; padding: 2px; margin: -2px; }
+
+.card {
+  --h: 270;
+  background: var(--surface); border-radius: 10px; padding: 10px 12px 11px; box-shadow: var(--shadow);
+  cursor: grab; user-select: none; transition: box-shadow .18s, transform .18s, opacity .15s;
+  border: 1px solid transparent;
+}
+.card:hover { box-shadow: var(--shadow-lift); }
+.card.sel { border-color: var(--accent); }
+.card.dragging { opacity: .35; }
+.card.is-done .card-title { color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--line); }
+.card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; color: var(--ink-2); }
+.card-top .dot { width: 8px; height: 8px; border-radius: 50%; background: oklch(var(--area-l) var(--area-c) var(--h)); }
+.prio { margin-left: auto; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+.prio[data-p="alta"] { color: var(--danger); }
+.prio[data-p="baja"] { color: var(--ink-3); font-weight: 500; }
+.prio[data-p="media"] { display: none; }
+.card-title { font-weight: 550; text-wrap: pretty; overflow-wrap: anywhere; }
+.card-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.card-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.card-meta svg.i { width: 13px; height: 13px; }
+.card-meta .full { color: var(--ok); }
+.drop-mark { height: 3px; border-radius: 2px; background: var(--accent); margin: -1px 2px; flex: none; }
+
+.add {
+  margin-top: 8px; display: flex; align-items: center; gap: 6px; width: 100%; height: 34px; padding: 0 8px;
+  border: 0; border-radius: 8px; background: none; color: var(--ink-3); text-align: left;
+}
+.add:hover { background: var(--bg); color: var(--ink); }
+.composer {
+  margin-top: 8px; width: 100%; border: 1px solid var(--accent); border-radius: 10px;
+  background: var(--surface); padding: 9px 11px; resize: none; outline: 0; min-height: 60px; line-height: 1.4;
+}
+.empty-lane { font-size: 12px; color: var(--ink-3); padding: 14px 6px 4px; text-align: center; }
+.add-lane {
+  flex: 0 0 160px; height: 44px; border: 1px dashed var(--line); border-radius: 14px; background: none; color: var(--ink-3);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.add-lane:hover { color: var(--ink); border-color: var(--ink-3); }
+
+/* Recursos */
+.res { max-width: 940px; margin: 0 auto; display: grid; gap: 16px; }
+.res-add { display: flex; gap: 8px; }
+.res-add input {
+  flex: 1; min-width: 0; height: 42px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface); outline: 0; box-shadow: var(--shadow);
+}
+.res-add input:focus { border-color: var(--accent); }
+.res-add input::placeholder { color: var(--ink-3); }
+.res-add .btn { height: 42px; }
+.res-tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.seg { display: flex; gap: 2px; padding: 3px; background: var(--lane); border-radius: 9px; }
+.seg button { height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: var(--ink-2); font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.res-list { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+.res-item {
+  --h: 270;
+  display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 16px 18px; cursor: pointer;
+  border-top: 1px solid var(--line); transition: background .15s;
+}
+.res-item:first-child { border-top: 0; }
+.res-item:hover { background: color-mix(in oklch, var(--lane) 55%, var(--surface)); }
+.res-item.sel { background: var(--accent-soft); }
+.res-title { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.res-title .dom { font-size: 12px; font-weight: 400; color: var(--ink-3); display: inline-flex; align-items: center; gap: 4px; }
+.res-title .dom svg.i { width: 12px; height: 12px; }
+.res-side { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+.res-side .dot { width: 8px; height: 8px; border-radius: 50%; background: oklch(var(--area-l) var(--area-c) var(--h)); }
+.res-note { grid-column: 1 / -1; color: var(--ink-2); max-width: 75ch; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.decision { grid-column: 1 / -1; margin-top: 6px; padding: 9px 12px; border-radius: 9px; background: var(--lane); max-width: 75ch; }
+.decision b { font-weight: 650; margin-right: 6px; }
+.res-item[data-s="adoptado"] .decision { background: var(--ok-soft); }
+.pill { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 550; background: var(--lane); color: var(--ink-2); }
+.pill[data-s="adoptado"] { background: var(--ok-soft); color: var(--ok); }
+.pill[data-s="evaluando"] { background: var(--accent-soft); color: var(--accent); }
+.pill[data-s="descartado"] { color: var(--ink-3); }
+.res-item[data-s="descartado"] .res-title { color: var(--ink-3); }
+.res-empty { padding: 40px 20px; text-align: center; color: var(--ink-3); }
+.res-empty b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
+
+/* Flujos */
+main.full { padding: 0; overflow: hidden; }
+.flows { display: grid; grid-template-columns: 260px 1fr; height: 100%; min-height: 0; }
+.flow-list { border-right: 1px solid var(--line); padding: 12px 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.flow-item {
+  --h: 270; text-align: left; border: 0; background: none; border-radius: 9px; padding: 9px 10px;
+  display: grid; gap: 3px; color: var(--ink); transition: background .15s;
+}
+.flow-item:hover { background: var(--lane); }
+.flow-item[aria-current="true"] { background: var(--surface); box-shadow: var(--shadow); }
+.flow-item .t { font-weight: 550; overflow-wrap: anywhere; }
+.flow-item .m { font-size: 12px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; }
+.flow-item .dot { width: 7px; height: 7px; border-radius: 50%; background: oklch(var(--area-l) var(--area-c) var(--h)); }
+.flow-list-empty { font-size: 12px; color: var(--ink-3); padding: 8px 10px; }
+.flow-stage { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.flow-stage > .flow-body, .flow-stage > .flow-canvas { flex: 1; min-height: 0; }
+.flow-links { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 10px 20px; border-bottom: 1px solid var(--line); }
+.flow-links .lbl { font-size: 12px; font-weight: 600; color: var(--ink-2); margin-right: 4px; }
+.link-chip {
+  --h: 270; display: inline-flex; align-items: center; height: 30px; border-radius: 8px; background: var(--surface);
+  border: 1px solid var(--line); font-size: 13px; max-width: 100%; transition: border-color .15s;
+}
+.link-chip:hover { border-color: var(--ink-3); }
+.link-chip > button { border: 0; background: none; height: 100%; display: inline-flex; align-items: center; gap: 7px; padding: 0 10px; min-width: 0; border-radius: 8px; }
+.link-chip .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: oklch(var(--area-l) var(--area-c) var(--h)); }
+.link-chip .tt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.link-chip .st { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+.link-chip.done .tt { text-decoration: line-through; color: var(--ink-3); }
+.link-chip > .unlink { padding: 0 8px 0 2px; color: var(--ink-3); }
+.link-chip > .unlink:hover { color: var(--danger); }
+.link-chip > .unlink svg.i { width: 13px; height: 13px; }
+.link-select { width: auto; max-width: 200px; height: 30px; padding: 0 8px; font-size: 13px; color: var(--ink-2); }
+.p-links { display: flex; flex-wrap: wrap; gap: 6px; }
+.p-links .link-select { width: 100%; max-width: none; }
+.flow-head { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.flow-titles { flex: 1; min-width: 240px; display: grid; gap: 1px; }
+.flow-title, .flow-desc { border: 0; background: none; outline: 0; padding: 2px 4px; margin-left: -4px; border-radius: 5px; width: 100%; }
+.flow-title { font-size: 17px; font-weight: 650; letter-spacing: -0.015em; }
+.flow-desc { font-size: 13px; color: var(--ink-2); resize: none; overflow: hidden; line-height: 1.4; display: block; }
+.flow-desc::placeholder { color: var(--ink-3); }
+.flow-title:hover, .flow-desc:hover { background: var(--lane); }
+.flow-title:focus, .flow-desc:focus { background: var(--surface); box-shadow: 0 0 0 2px var(--accent); }
+.flow-tools { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.flow-tools select { width: auto; height: 34px; padding: 0 8px; }
+.flow-tools .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+.zoom-n { font-size: 12px; color: var(--ink-3); min-width: 40px; text-align: center; font-variant-numeric: tabular-nums; }
+.btn.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.flow-body { display: grid; grid-template-columns: 1fr; min-height: 0; }
+.flow-body.editing { grid-template-columns: minmax(280px, 36%) 1fr; }
+.flow-editor { display: none; border-right: 1px solid var(--line); flex-direction: column; min-height: 0; background: var(--surface); }
+.editing .flow-editor { display: flex; }
+.flow-src {
+  flex: 1; border: 0; outline: 0; resize: none; padding: 16px 18px; background: none; tab-size: 2; white-space: pre; overflow: auto;
+  font: 13px/1.65 ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+.flow-err { padding: 10px 18px; font-size: 12px; color: var(--danger); border-top: 1px solid var(--line); }
+.flow-err:empty { display: none; }
+.flow-help { padding: 10px 18px; font-size: 12px; color: var(--ink-3); border-top: 1px solid var(--line); }
+.flow-canvas {
+  position: relative; overflow: hidden; cursor: grab; touch-action: none;
+  background-color: var(--bg); background-image: radial-gradient(var(--line) 1px, transparent 1.4px); background-size: 22px 22px;
+}
+.flow-canvas.panning { cursor: grabbing; }
+.flow-pickrow { display: none; }
+.flow-float { display: none; position: absolute; top: 12px; right: 12px; gap: 6px; z-index: 2; }
+.flow-float .btn { box-shadow: var(--shadow); }
+/* Pantalla completa del diagrama */
+body.flow-full header, body.flow-full .flow-list, body.flow-full .flow-head, body.flow-full .flow-links, body.flow-full #new { display: none; }
+body.flow-full { grid-template-rows: 1fr; }
+body.flow-full .flows { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+body.flow-full .flow-body { grid-template-columns: 1fr; }
+body.flow-full .flow-editor { display: none; }
+body.flow-full .flow-float { display: flex; }
+.flow-svg { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.flow-svg svg { display: block; max-width: none !important; }
+.flow-svg .node rect, .flow-svg .cluster rect { rx: 8px; ry: 8px; }
+.flow-msg { position: absolute; inset: 0; display: grid; place-content: center; gap: 4px; color: var(--ink-3); text-align: center; padding: 20px; pointer-events: none; }
+.flow-msg b { color: var(--ink); font-size: 15px; }
+@media (max-width: 760px) {
+  .flows { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .flow-list { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  .flow-item { flex: 0 0 auto; }
+  .flow-body.editing { grid-template-columns: 1fr; grid-template-rows: 40% 1fr; }
+  .flow-head { padding: 10px 16px; }
+}
+
+/* Panel */
+aside {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw);
+  background: var(--surface); border-left: 1px solid var(--line); box-shadow: var(--shadow-lift);
+  transform: translateX(102%); visibility: hidden; transition: transform .22s cubic-bezier(.16,1,.3,1), visibility 0s .22s;
+  display: flex; flex-direction: column; z-index: 10;
+}
+aside.open { transform: none; visibility: visible; transition: transform .22s cubic-bezier(.16,1,.3,1); }
+.panel-head { display: flex; align-items: center; gap: 4px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.ref {
+  border: 0; background: var(--lane); color: var(--ink-2); border-radius: 6px; height: 24px; padding: 0 7px;
+  font: 12px/1 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; margin-right: 6px;
+}
+.ref:hover { background: var(--accent-soft); color: var(--accent); }
+.panel-head .where { font-size: 12px; color: var(--ink-3); flex: 1; }
+.panel-body { padding: 18px 20px 28px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+.panel-body[hidden] { display: none; }
+.panel-body > * { flex-shrink: 0; }
+.p-title {
+  font-size: 19px; font-weight: 650; letter-spacing: -0.015em; line-height: 1.3;
+  border: 0; outline: 0; background: none; resize: none; width: 100%; padding: 0; overflow: hidden;
+}
+.p-title::placeholder { color: var(--ink-3); }
+.field { display: grid; gap: 6px; }
+.field > label, .field > .lbl { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; }
+select, .notes, .new-item, .inp {
+  width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; outline: 0;
+}
+select:focus, .notes:focus, .new-item:focus, .inp:focus { border-color: var(--accent); background: var(--surface); }
+.notes { min-height: 120px; resize: vertical; line-height: 1.55; }
+.notes.short { min-height: 70px; }
+.notes::placeholder, .new-item::placeholder, .inp::placeholder { color: var(--ink-3); }
+.url-row { display: flex; gap: 6px; }
+.url-row .btn { height: auto; }
+.check { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; }
+.check input[type=checkbox] { margin-top: 3px; accent-color: var(--accent); width: 15px; height: 15px; }
+.check .t { flex: 1; border: 0; background: none; outline: 0; padding: 1px 2px; border-radius: 4px; resize: none; line-height: 1.45; overflow: hidden; min-width: 0; }
+.check .t:focus { background: var(--bg); }
+.check.done .t { color: var(--ink-3); text-decoration: line-through; }
+.check .x { opacity: 0; border: 0; background: none; color: var(--ink-3); padding: 2px; border-radius: 4px; display: flex; }
+.check:hover .x, .check .x:focus-visible { opacity: 1; }
+.check .x:hover { color: var(--danger); }
+.hint { font-size: 12px; color: var(--ink-3); }
+
+/* Toast */
+.toast {
+  position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 20px); opacity: 0;
+  background: var(--ink); color: var(--bg); padding: 9px 14px; border-radius: 10px; font-size: 13px;
+  display: flex; gap: 12px; align-items: center; transition: opacity .18s, transform .18s; pointer-events: none; z-index: 20;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.toast button { border: 0; background: none; color: inherit; font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Teléfonos */
+@media (hover: none) { .check .x { opacity: 1; } }
+@media (max-width: 640px) {
+  body { height: 100dvh; grid-template-columns: minmax(0, 1fr); }
+  header, main { min-width: 0; }
+  header { padding: 10px 12px 8px; gap: 8px; }
+  .brand { order: 1; }
+  .spacer { order: 2; }
+  .status, #guide-btn, #theme, #export { order: 3; }
+  .tabs { order: 10; flex: 1 1 100%; }
+  .tab { flex: 1; justify-content: center; padding: 0 6px; height: 32px; }
+  .search { order: 11; flex: 1 1 100%; max-width: none; height: 38px; }
+  .kbd-hint { display: none; }
+  .filters { order: 12; flex: 1 1 100%; flex-wrap: nowrap; overflow-x: auto; margin: 0 -12px; padding: 0 12px 2px; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .chip { flex: none; }
+  /* Crear: botón flotante abajo a la derecha */
+  #new {
+    position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 9;
+    height: 50px; padding: 0 18px; border-radius: 16px; box-shadow: var(--shadow-lift);
+  }
+  .toast { bottom: calc(80px + env(safe-area-inset-bottom)); max-width: calc(100vw - 32px); }
+  /* Tablero y roadmap: una columna por pantalla, deslizando de lado */
+  main { padding: 12px 0 0; scroll-snap-type: x mandatory; scroll-padding: 0 12px; }
+  main.full { scroll-snap-type: none; }
+  .board { height: 100%; min-height: 0; gap: 10px; padding: 0 12px; }
+  .board::after { content: ""; flex: 0 0 2px; }
+  .lane, .lane.tray { flex: 0 0 calc(100vw - 40px); max-width: none; max-height: 100%; scroll-snap-align: start; padding-bottom: 76px; }
+  .lane.tray { padding-bottom: 76px; }
+  .add-lane { flex: 0 0 140px; scroll-snap-align: start; }
+  /* Recursos */
+  main:has(.res-add) { padding: 12px 12px 90px; scroll-snap-type: none; }
+  .res-item { grid-template-columns: 1fr; }
+  .res-tools { gap: 8px; }
+  /* Flujos: chips de tarjetas en una fila deslizable para dejar sitio al diagrama */
+  .flow-head { padding: 10px 12px; gap: 8px; }
+  .flow-titles { min-width: 0; flex-basis: 100%; }
+  .flow-links { flex-wrap: nowrap; overflow-x: auto; padding: 8px 12px; scrollbar-width: none; }
+  .flow-links .lbl { flex: none; }
+  .link-chip { flex: none; }
+  .link-chip .tt { max-width: 180px; }
+  /* En el móvil se hace zoom pellizcando: solo queda el botón de ajustar */
+  /* Flujos en el móvil: el diagrama manda. Selector de flujo arriba, el resto en «⋯» */
+  .flow-list { display: none; }
+  .flows { grid-template-rows: 1fr; }
+  body[data-view="flujos"] #new { display: none; }
+  .flow-pickrow { display: flex; gap: 6px; align-items: center; flex: 1 1 180px; min-width: 0; }
+  .flow-pick { flex: 1; min-width: 0; height: 40px; font-weight: 600; }
+  .flow-head:not(.more) .flow-titles, .flow-head:not(.more) .flow-area, .flow-head:not(.more) .ref, .flow-head:not(.more) #flow-del { display: none; }
+  #flow-more[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+  .flow-tools [data-z="in"], .flow-tools [data-z="out"], .flow-tools .zoom-n, .flow-tools .sep { display: none; }
+  .flow-body.editing { grid-template-rows: 60% 1fr; }
+  .flow-tools { flex-wrap: nowrap; }
+  .flow-head.more .flow-tools { width: 100%; }
+  .flow-tools [data-z="fit"] { display: none; }
+  .flow-tools select { min-width: 0; flex: 1 1 auto; max-width: 150px; }
+  .flow-head:not(.more) .flow-tools { justify-content: flex-end; }
+  .flow-float { display: flex; }
+  .flow-float #flow-exit { display: none; }
+  body.flow-full .flow-float #flow-exit { display: inline-flex; }
+  .flow-tools #flow-del { margin-left: auto; }
+  .flow-help { display: none; }
+  /* Panel de detalle a pantalla completa */
+  aside { width: 100vw; border-left: 0; }
+  .panel-body { padding: 16px 16px calc(28px + env(safe-area-inset-bottom)); }
+  .row { grid-template-columns: 1fr; }
+  /* Evita el zoom automático de iOS al escribir */
+  input, textarea, select { font-size: 16px; }
+  .guide-pop { right: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Planner</div>
+  <nav class="tabs" role="tablist" aria-label="Vistas">
+    <button class="tab" role="tab" data-view="board" title="Tablero (1)">Tablero</button>
+    <button class="tab" role="tab" data-view="roadmap" title="Roadmap (2)">Roadmap</button>
+    <button class="tab" role="tab" data-view="recursos" title="Recursos (3)">Recursos <span class="n" id="res-n"></span></button>
+    <button class="tab" role="tab" data-view="flujos" title="Flujos (4)">Flujos <span class="n" id="flow-n"></span></button>
+  </nav>
+  <label class="search">
+    <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Buscar" autocomplete="off" aria-label="Buscar">
+    <kbd class="kbd-hint">/</kbd>
+  </label>
+  <div class="filters" id="filters" role="group" aria-label="Filtrar por área"></div>
+  <div class="spacer"></div>
+  <div class="status" id="status" data-s="ok" title="Guardado en plan/data/plan.json">Guardado</div>
+  <button class="btn ghost icon" id="guide-btn" title="Reglas del plan" aria-label="Reglas del plan" aria-expanded="false">
+    <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></svg>
+  </button>
+  <button class="btn ghost icon" id="theme" title="Cambiar tema" aria-label="Cambiar tema">
+    <svg class="i" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z"/></svg>
+  </button>
+  <button class="btn ghost icon" id="export" title="Descargar plan.json" aria-label="Descargar plan.json">
+    <svg class="i" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>
+  </button>
+  <button class="btn primary" id="new" title="Atajo: N">
+    <svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    <span id="new-label">Nueva tarjeta</span>
+  </button>
+</header>
+
+<main id="main"></main>
+<div class="guide-pop" id="guide-pop" role="dialog" aria-label="Reglas del plan"><h3>Reglas del plan</h3><ul id="guide-list"></ul></div>
+
+<aside id="panel" aria-label="Detalle" aria-hidden="true">
+  <div class="panel-head">
+    <button class="ref" id="ref" title="Copiar referencia para pedírselo a Claude"></button>
+    <div class="where" id="where"></div>
+    <button class="btn ghost icon danger" id="del" title="Eliminar" aria-label="Eliminar">
+      <svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+    </button>
+    <button class="btn ghost icon" id="close" title="Cerrar (Esc)" aria-label="Cerrar">
+      <svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+
+  <div class="panel-body" id="card-body">
+    <textarea class="p-title" id="p-title" rows="1" aria-label="Título"></textarea>
+    <div class="row">
+      <div class="field"><label for="p-col">Estado</label><select id="p-col"></select></div>
+      <div class="field"><label for="p-phase">Fase del roadmap</label><select id="p-phase"></select></div>
+      <div class="field"><label for="p-area">Área</label><select id="p-area"></select></div>
+      <div class="field"><label for="p-prio">Prioridad</label>
+        <select id="p-prio"><option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="p-notes">Notas</label>
+      <textarea class="notes" id="p-notes" placeholder="Decisiones, dudas, enlaces…"></textarea>
+    </div>
+    <div class="field">
+      <div class="lbl">Flujos</div>
+      <div class="p-links" id="p-flows"></div>
+    </div>
+    <div class="field">
+      <div class="lbl" id="p-check-lbl">Checklist</div>
+      <div class="bar" id="p-progress" hidden><i></i></div>
+      <div id="p-checks"></div>
+      <input class="new-item" id="p-new-item" placeholder="Añadir paso y pulsar Enter" aria-label="Nuevo paso">
+    </div>
+    <div class="hint">Se guarda solo en <code>plan/data/plan.json</code>.</div>
+  </div>
+
+  <div class="panel-body" id="res-body" hidden>
+    <textarea class="p-title" id="r-title" rows="1" placeholder="Nombre del recurso" aria-label="Nombre del recurso"></textarea>
+    <div class="field">
+      <label for="r-url">Enlace</label>
+      <div class="url-row">
+        <input class="inp" id="r-url" type="url" placeholder="https://…">
+        <a class="btn icon" id="r-open" target="_blank" rel="noopener" title="Abrir enlace" aria-label="Abrir enlace">
+          <svg class="i" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="r-status">Estado</label>
+        <select id="r-status"><option value="evaluando">Evaluando</option><option value="adoptado">Adoptado</option><option value="descartado">Descartado</option></select>
+      </div>
+      <div class="field"><label for="r-kind">Tipo</label>
+        <select id="r-kind"><option>Herramienta</option><option>Artículo</option><option>Repositorio</option><option>Video</option><option>Referencia</option><option>Idea</option></select>
+      </div>
+      <div class="field"><label for="r-area">Área</label><select id="r-area"></select></div>
+    </div>
+    <div class="field">
+      <label for="r-note">Qué es y por qué importa</label>
+      <textarea class="notes" id="r-note" placeholder="Lo que viste y por qué puede ser mejor"></textarea>
+    </div>
+    <div class="field">
+      <label for="r-decision">Decisión para el producto</label>
+      <textarea class="notes short" id="r-decision" placeholder="Ej.: usaremos esto en lugar de…"></textarea>
+    </div>
+    <div class="hint" id="r-added"></div>
+  </div>
+</aside>
+
+<div class="toast" id="toast" role="status"><span id="toast-msg"></span><button id="toast-undo">Deshacer</button></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const uid = () => Math.random().toString(36).slice(2, 9);
+const today = () => new Date().toISOString().slice(0, 10);
+const LS = "planner";
+const VIEWS = ["board", "roadmap", "recursos", "flujos"];
+const STATUS = { adoptado: "Adoptado", evaluando: "Evaluando", descartado: "Descartado" };
+
+let fsel = null, editing = false;
+let S = null, view = "board", sel = null, rsel = null, filter = new Set(), query = "", rstatus = "", dragId = null, composing = null;
+
+/* ---------- Persistencia ---------- */
+let saveT = null, etag = null, inflight = false, dirty = false;
+const status = (s, txt) => { const el = $("#status"); el.dataset.s = s; el.textContent = txt; };
+function save() {
+  S.updated = new Date().toISOString();
+  try { localStorage.setItem(LS, JSON.stringify(S)); } catch {}
+  status("saving", "Guardando…");
+  dirty = true; clearTimeout(saveT); saveT = setTimeout(flush, 250);
+}
+async function flush() {
+  saveT = null;
+  if (inflight || !dirty) return;
+  inflight = true; dirty = false;
+  try {
+    const r = await fetch("/api/plan", { method: "PUT", headers: { "Content-Type": "application/json", ...(etag ? { "If-Match": etag } : {}) }, body: JSON.stringify(S) });
+    if (r.status === 409) {
+      const d = await r.json(); etag = d.etag; S = normalize(d.plan); dirty = false; rerender();
+      toast("El plan cambió fuera de esta pestaña (Claude u otra pestaña). Se cargó la versión nueva; revisa tu último cambio.");
+    } else if (!r.ok) throw 0;
+    else { etag = (await r.json()).etag; }
+    status("ok", "Guardado");
+  } catch { status("offline", "Sin servidor · copia local"); }
+  inflight = false;
+  if (dirty) flush();
+}
+/* Cambios externos (Claude edita plan.json) → la página se actualiza sola */
+async function refresh(notify) {
+  try {
+    const r = await fetch("/api/plan", { cache: "no-store" }); if (!r.ok) return;
+    const t = r.headers.get("ETag"); if (t && t === etag) return;
+    S = normalize(await r.json()); etag = t; rerender();
+    if (notify) toast("Plan actualizado");
+  } catch {}
+}
+function rerender() {
+  renderFilters(); render();
+  const inPanel = $("#panel").contains(document.activeElement);
+  if (sel && !inPanel) card(sel) ? openCard(sel) : closePanel();
+  if (rsel && !inPanel) res(rsel) ? openRes(rsel) : closePanel();
+}
+function listen() {
+  if (!window.EventSource || location.search.includes("nosse")) return;
+  const es = new EventSource("/api/events");
+  es.onmessage = (e) => { if (e.data && e.data !== etag && !inflight && !dirty) refresh(true); };
+}
+/* Regla: «Por definir» solo con «Falta decidir: …»; al salir de ahí se quita esa línea */
+function setCol(c, col) {
+  if (c.col === col) return true;
+  if (col === "definir" && !/Falta decidir:/.test(c.notes || "")) {
+    const f = prompt("¿Qué falta decidir en esta tarjeta?\n«Por definir» es solo para lo que espera una decisión. Si ya está decidido, usa «Listo para construir».");
+    if (!f || !f.trim()) return false;
+    c.notes = ("Falta decidir: " + f.trim() + "\n" + (c.notes || "")).trim();
+  }
+  if (c.col === "definir" && col !== "definir") c.notes = (c.notes || "").replace(/^Falta decidir:[^\n]*\n?/m, "").trim();
+  c.col = col; return true;
+}
+const nextId = (prefix, arr) => prefix + (1 + arr.reduce((m, x) => {
+  const n = String(x.id).startsWith(prefix) ? parseInt(String(x.id).slice(prefix.length), 10) : 0; return n > m ? n : m; }, 0));
+async function copyRef(text) {
+  try { await navigator.clipboard.writeText(text); toast("Copiado: " + text); }
+  catch { toast(text); }
+}
+function normalize(d) {
+  d = d && d.columns ? d : { version: 2, project: "Planner", columns: [{ id: "ideas", name: "Ideas" }], areas: [], cards: [] };
+  d.phases ||= []; d.resources ||= []; d.flows ||= []; d.areas ||= []; d.cards ||= [];
+  d.flows.forEach((f) => { f.cards ||= []; });
+  d.cards.forEach((c) => { c.phase ??= ""; c.checklist ||= []; c.notes ??= ""; });
+  return d;
+}
+async function load() {
+  let d = null;
+  try { const r = await fetch("/api/plan", { cache: "no-store" }); if (r.ok) { etag = r.headers.get("ETag"); d = await r.json(); } } catch {}
+  if (!d || !d.columns) {
+    try { d = JSON.parse(localStorage.getItem(LS)); } catch {}
+    if (d) status("offline", "Sin servidor · copia local");
+  }
+  S = normalize(d);
+}
+
+/* ---------- Helpers ---------- */
+const area = (id) => S.areas.find((a) => a.id === id) || { name: "Sin área", hue: 270, none: true };
+const card = (id) => S.cards.find((c) => c.id === id);
+const res = (id) => S.resources.find((r) => r.id === id);
+const flowsOf = (cardId) => S.flows.filter((f) => (f.cards || []).includes(cardId));
+const colName = (id) => (S.columns.find((c) => c.id === id) || {}).name || "";
+const phaseName = (id) => (S.phases.find((p) => p.id === id) || {}).name || "Sin fase";
+const doneCol = () => (S.columns[S.columns.length - 1] || {}).id;
+const matchArea = (a) => !filter.size || filter.has(a);
+const visible = (c) => matchArea(c.area) &&
+  (!query || (c.title + " " + c.notes + " " + c.checklist.map((x) => x.t).join(" ")).toLowerCase().includes(query));
+const visibleRes = (r) => matchArea(r.area) && (!rstatus || r.status === rstatus) &&
+  (!query || [r.title, r.url, r.note, r.decision, r.kind].join(" ").toLowerCase().includes(query));
+const domain = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; } };
+const isUrl = (s) => /^https?:\/\/\S+$/i.test(s) || /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(s);
+const I = {
+  plus: '<svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  check: '<svg class="i" viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>',
+  notes: '<svg class="i" viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg>',
+  flag: '<svg class="i" viewBox="0 0 24 24"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>',
+  col: '<svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M10 4v16"/></svg>',
+  flow: '<svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="5" rx="1.5"/><rect x="14" y="15" width="7" height="5" rx="1.5"/><path d="M6.5 9v3.5a2 2 0 0 0 2 2H14"/></svg>',
+  x: '<svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  link: '<svg class="i" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/></svg>',
+};
+
+/* ---------- Render ---------- */
+function renderFilters() {
+  $("#filters").innerHTML = S.areas.map((a) =>
+    `<button class="chip" style="--h:${a.hue}" data-area="${a.id}" aria-pressed="${filter.has(a.id)}"><span class="dot"></span>${esc(a.name)}</button>`
+  ).join("");
+}
+function cardHTML(c) {
+  const a = area(c.area), done = c.checklist.filter((x) => x.done).length, n = c.checklist.length;
+  const isDone = view === "roadmap" && c.col === doneCol();
+  const where = view === "roadmap" ? `<span>${I.col}${esc(colName(c.col))}</span>` : (c.phase ? `<span>${I.flag}${esc(phaseName(c.phase))}</span>` : "");
+  return `<article class="card${sel === c.id ? " sel" : ""}${isDone ? " is-done" : ""}" draggable="true" tabindex="0" data-id="${c.id}" style="--h:${a.hue}">
+    <div class="card-top"><span class="dot"></span>${esc(a.name)}<span class="prio" data-p="${c.priority}">${c.priority === "alta" ? "Alta" : c.priority === "baja" ? "Baja" : ""}</span></div>
+    <div class="card-title">${esc(c.title)}</div>
+    <div class="card-meta">
+      ${where}
+      ${n ? `<span class="${done === n ? "full" : ""}">${I.check}${done}/${n}</span>` : ""}
+      ${c.notes ? `<span>${I.notes}Notas</span>` : ""}
+      ${flowsOf(c.id).length ? `<span>${I.flow}${flowsOf(c.id).length === 1 ? "Flujo" : flowsOf(c.id).length + " flujos"}</span>` : ""}
+    </div>
+  </article>`;
+}
+// Columnas base: las reglas del plan dependen de ellas, no se borran
+const CORE_COLS = ["ideas", "definir", "listo", "curso", "hecho"];
+const canDel = (kind, l) => !S.cards.some((c) => c[kind] === l.id) && !(kind === "col" && CORE_COLS.includes(l.id));
+const delBtn = (l, all, kind) => !all.length && canDel(kind, l)
+  ? `<button class="lane-del" data-kind="${kind}" data-id="${l.id}" title="Eliminar ${kind === "col" ? "columna" : "fase"}" aria-label="Eliminar">${I.x}</button>` : "";
+function delLane(kind, id) {
+  const arr = kind === "col" ? S.columns : S.phases, l = arr.find((x) => x.id === id);
+  if (!l || !canDel(kind, l)) return;
+  const i = arr.indexOf(l); arr.splice(i, 1); save(); render();
+  toast(`${kind === "col" ? "Columna" : "Fase"} “${l.name}” eliminada`, () => { arr.splice(i, 0, l); save(); render(); });
+}
+function lanesHTML(lanes, key) {
+  return lanes.map((l) => {
+    const all = S.cards.filter((c) => (c[key] || "") === l.id);
+    const list = all.filter(visible);
+    let head;
+    if (key === "col") {
+      head = `<div class="lane-head"><input class="lane-name" value="${esc(l.name)}" data-kind="col" data-id="${l.id}" aria-label="Nombre de la columna">
+        <span class="count">${list.length === all.length ? all.length : list.length + "/" + all.length}</span>${delBtn(l, all, "col")}</div>`;
+    } else if (!l.id) {
+      head = `<div class="lane-head"><span class="lane-name">Sin fase</span><span class="count">${all.length}</span></div>`;
+    } else {
+      const d = all.filter((c) => c.col === doneCol()).length, pct = all.length ? (d / all.length) * 100 : 0;
+      head = `<div class="lane-head"><input class="lane-name" value="${esc(l.name)}" data-kind="phase" data-id="${l.id}" aria-label="Nombre de la fase">${delBtn(l, all, "phase")}</div>
+        <div class="phase-meta">
+          <textarea class="lane-goal" rows="2" data-id="${l.id}" placeholder="Objetivo de esta fase" aria-label="Objetivo de la fase">${esc(l.goal || "")}</textarea>
+          <div class="bar-row"><div class="bar"><i style="width:${pct}%"></i></div>${d}/${all.length} hechas</div>
+        </div>`;
+    }
+    return `<section class="lane${key === "phase" && !l.id ? " tray" : ""}" data-key="${key}" data-id="${l.id}">
+      ${head}
+      <div class="cards">${list.map(cardHTML).join("") || (all.length ? "" : `<div class="empty-lane">${key === "phase" && !l.id ? "Tarjetas sin fase aparecen aquí" : "Arrastra aquí o añade una tarjeta"}</div>`)}</div>
+      ${composing === key + ":" + l.id
+        ? `<textarea class="composer" data-key="${key}" data-id="${l.id}" placeholder="Título y Enter · Esc para cancelar"></textarea>`
+        : `<button class="add" data-key="${key}" data-id="${l.id}">${I.plus}Añadir tarjeta</button>`}
+    </section>`;
+  }).join("");
+}
+function resourcesHTML() {
+  const list = S.resources.filter(visibleRes);
+  const order = { adoptado: 0, evaluando: 1, descartado: 2 };
+  list.sort((a, b) => order[a.status] - order[b.status] || (b.added || "").localeCompare(a.added || ""));
+  const segs = [["", "Todos"], ...Object.entries(STATUS)].map(([k, v]) => {
+    const n = k ? S.resources.filter((r) => r.status === k).length : S.resources.length;
+    return `<button data-s="${k}" aria-pressed="${rstatus === k}">${v} <span class="n">${n}</span></button>`;
+  }).join("");
+  const items = list.map((r) => {
+    const a = area(r.area), dom = domain(r.url);
+    return `<li class="res-item${rsel === r.id ? " sel" : ""}" data-id="${r.id}" data-s="${r.status}" tabindex="0" style="--h:${a.hue}">
+      <div class="res-title">${esc(r.title || dom || "Sin título")}
+        ${dom ? `<a class="dom" href="${esc(r.url)}" target="_blank" rel="noopener">${I.link}${esc(dom)}</a>` : ""}</div>
+      <div class="res-side">${a.none ? "" : `<span class="dot"></span>${esc(a.name)} ·`} ${esc(r.kind)} <span class="pill" data-s="${r.status}">${STATUS[r.status]}</span></div>
+      ${r.note ? `<div class="res-note">${esc(r.note)}</div>` : ""}
+      ${r.decision ? `<div class="decision"><b>Decisión</b>${esc(r.decision)}</div>` : ""}
+    </li>`;
+  }).join("");
+  return `<div class="res">
+    <form class="res-add" id="res-add">
+      <input id="res-input" placeholder="Pega un enlace o escribe lo que encontraste y pulsa Enter" autocomplete="off" aria-label="Nuevo recurso">
+      <button class="btn primary" type="submit">${I.plus}Añadir</button>
+    </form>
+    <div class="res-tools"><div class="seg" id="res-seg" role="group" aria-label="Filtrar por estado">${segs}</div></div>
+    ${items ? `<ul class="res-list">${items}</ul>` : `<div class="res-list res-empty"><b>${S.resources.length ? "Nada coincide con el filtro" : "Aún no hay recursos"}</b>${S.resources.length ? "Quita filtros o cambia la búsqueda." : "Guarda aquí lo que encuentres en internet y la decisión que implica para el producto."}</div>`}
+  </div>`;
+}
+function render() {
+  document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.view === view));
+  $("#res-n").textContent = S.resources.length || "";
+  $("#flow-n").textContent = S.flows.length || "";
+  $("#new-label").textContent = view === "recursos" ? "Nuevo recurso" : view === "flujos" ? "Nuevo flujo" : "Nueva tarjeta";
+  const m = $("#main");
+  m.classList.toggle("full", view === "flujos");
+  document.body.dataset.view = view; document.body.classList.toggle("flow-full", view === "flujos" && flowFull);
+  if (view === "flujos") { m.innerHTML = flowsHTML(); m.querySelectorAll(".flow-desc").forEach(fit); drawFlow(); return; }
+  const scroll = [...m.querySelectorAll(".cards")].map((el) => el.scrollTop), mainScroll = m.scrollTop;
+  if (view === "recursos") {
+    const typed = $("#res-input") ? $("#res-input").value : "", focused = document.activeElement && document.activeElement.id === "res-input";
+    m.innerHTML = resourcesHTML();
+    $("#res-input").value = typed; if (focused) $("#res-input").focus();
+  } else {
+    const lanes = view === "board" ? S.columns : [{ id: "", name: "Sin fase" }, ...S.phases];
+    const key = view === "board" ? "col" : "phase";
+    m.innerHTML = `<div class="board">${lanesHTML(lanes, key)}<button class="add-lane" id="add-lane">${I.plus}${view === "board" ? "Columna" : "Fase"}</button></div>`;
+    m.querySelectorAll(".cards").forEach((el, i) => (el.scrollTop = scroll[i] || 0));
+    const comp = $(".composer"); if (comp) comp.focus();
+  }
+  m.scrollTop = mainScroll;
+}
+function setView(v) {
+  if (!VIEWS.includes(v) || v === view) return;
+  view = v; composing = null; closePanel(true);
+  try { localStorage.setItem(LS + "-view", v); } catch {}
+  history.replaceState(null, "", "#" + v);
+  render();
+}
+
+/* ---------- Panel ---------- */
+let panelFor = null;
+function showPanel(kind) {
+  const key = kind + ":" + (kind === "card" ? sel : rsel);
+  if (key !== panelFor) { panelFor = key; $("#card-body").scrollTop = 0; $("#res-body").scrollTop = 0; }
+  $("#card-body").hidden = kind !== "card"; $("#res-body").hidden = kind !== "res";
+  $("#panel").classList.add("open"); $("#panel").setAttribute("aria-hidden", "false");
+}
+function closePanel(silent) {
+  sel = null; rsel = null; panelFor = null; $("#panel").classList.remove("open"); $("#panel").setAttribute("aria-hidden", "true");
+  if (!silent) render();
+}
+const opts = (arr, none) => (none ? `<option value="">${none}</option>` : "") + arr.map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join("");
+function fit(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }
+
+function openCard(id) {
+  rsel = null; sel = id; const c = card(id); if (!c) return closePanel();
+  $("#p-col").innerHTML = opts(S.columns); $("#p-area").innerHTML = opts(S.areas); $("#p-phase").innerHTML = opts(S.phases, "Sin fase");
+  $("#p-title").value = c.title; $("#p-col").value = c.col; $("#p-area").value = c.area; $("#p-phase").value = c.phase || "";
+  $("#p-prio").value = c.priority; $("#p-notes").value = c.notes;
+  showPanel("card"); renderChecks(); renderCardFlows(); fit($("#p-title")); render();
+}
+function renderChecks() {
+  const c = card(sel); if (!c) return;
+  const n = c.checklist.length, d = c.checklist.filter((x) => x.done).length;
+  $("#p-check-lbl").textContent = n ? `Checklist · ${d}/${n}` : "Checklist";
+  $("#p-progress").hidden = !n; $("#p-progress i").style.width = n ? (d / n) * 100 + "%" : 0;
+  $("#p-checks").innerHTML = c.checklist.map((x, i) =>
+    `<div class="check${x.done ? " done" : ""}" data-i="${i}">
+      <input type="checkbox" ${x.done ? "checked" : ""} aria-label="Completado">
+      <textarea class="t" rows="1" aria-label="Paso">${esc(x.t)}</textarea>
+      <button class="x" aria-label="Quitar paso"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>`).join("");
+  $("#p-checks").querySelectorAll(".t").forEach(fit);
+  $("#where").textContent = colName(c.col) + " · " + phaseName(c.phase);
+  $("#ref").textContent = "#" + c.id; $("#ref").dataset.copy = `#${c.id} ${c.title}`;
+}
+function renderCardFlows() {
+  const c = card(sel); if (!c) return;
+  const linked = flowsOf(c.id), rest = S.flows.filter((f) => !linked.includes(f));
+  $("#p-flows").innerHTML = linked.map((f) => `<span class="link-chip" style="--h:${area(f.area).hue}">
+      <button data-go-flow="${f.id}" title="Ver flujo">${I.flow}<span class="tt">${esc(f.title || "Sin título")}</span></button>
+      <button class="unlink" data-unlink-flow="${f.id}" title="Desvincular" aria-label="Desvincular flujo">${I.x}</button></span>`).join("") +
+    (rest.length ? `<select class="link-select" id="p-flow-add" aria-label="Vincular flujo"><option value="">${linked.length ? "+ Vincular otro flujo…" : "+ Vincular a un flujo…"}</option>${rest.map((f) => `<option value="${f.id}">${esc(f.title || "Sin título")}</option>`).join("")}</select>`
+      : linked.length ? "" : `<span class="hint">Aún no hay flujos.</span>`);
+}
+$("#p-flows").addEventListener("click", (e) => {
+  const go = e.target.closest("[data-go-flow]");
+  if (go) { const id = go.dataset.goFlow; closePanel(true); fsel = id; fittedFor = null; view === "flujos" ? render() : setView("flujos"); return; }
+  const un = e.target.closest("[data-unlink-flow]");
+  if (un) { const f = flow(un.dataset.unlinkFlow); f.cards = f.cards.filter((x) => x !== sel); save(); renderCardFlows(); render(); }
+});
+$("#p-flows").addEventListener("change", (e) => {
+  if (e.target.id !== "p-flow-add" || !e.target.value) return;
+  flow(e.target.value).cards.push(sel); save(); renderCardFlows(); render();
+});
+const upd = (fn) => { const c = card(sel); if (c) { fn(c); save(); render(); renderChecks(); } };
+
+$("#p-title").addEventListener("input", (e) => { fit(e.target); upd((c) => (c.title = e.target.value)); });
+$("#p-title").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#p-notes").focus(); } });
+$("#p-notes").addEventListener("input", (e) => upd((c) => (c.notes = e.target.value)));
+$("#p-col").addEventListener("change", (e) => upd((c) => { if (!setCol(c, e.target.value)) e.target.value = c.col; $("#p-notes").value = c.notes; }));
+$("#p-phase").addEventListener("change", (e) => upd((c) => (c.phase = e.target.value)));
+$("#p-area").addEventListener("change", (e) => upd((c) => (c.area = e.target.value)));
+$("#p-prio").addEventListener("change", (e) => upd((c) => (c.priority = e.target.value)));
+$("#p-new-item").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" || !e.target.value.trim()) return;
+  const t = e.target.value.trim(); e.target.value = "";
+  upd((c) => c.checklist.push({ t, done: false }));
+});
+$("#p-checks").addEventListener("change", (e) => {
+  const i = +e.target.closest(".check").dataset.i;
+  if (e.target.type === "checkbox") upd((c) => (c.checklist[i].done = e.target.checked));
+});
+$("#p-checks").addEventListener("input", (e) => {
+  if (!e.target.classList.contains("t")) return;
+  const i = +e.target.closest(".check").dataset.i;
+  fit(e.target); card(sel).checklist[i].t = e.target.value; save();
+});
+$("#p-checks").addEventListener("click", (e) => {
+  const x = e.target.closest(".x"); if (!x) return;
+  const i = +x.closest(".check").dataset.i; upd((c) => c.checklist.splice(i, 1));
+});
+
+function openRes(id, focusTitle) {
+  sel = null; rsel = id; const r = res(id); if (!r) return closePanel();
+  $("#r-area").innerHTML = opts(S.areas, "General");
+  $("#r-title").value = r.title; $("#r-url").value = r.url || ""; $("#r-status").value = r.status;
+  $("#r-kind").value = r.kind; $("#r-area").value = r.area || ""; $("#r-note").value = r.note || ""; $("#r-decision").value = r.decision || "";
+  $("#r-added").textContent = r.added ? "Añadido el " + r.added : "";
+  syncResHead(r); showPanel("res"); fit($("#r-title")); render();
+  if (focusTitle) setTimeout(() => { $("#r-title").focus(); $("#r-title").select(); }, 60);
+}
+function syncResHead(r) {
+  $("#where").textContent = "Recurso · " + STATUS[r.status];
+  $("#ref").textContent = "#" + r.id; $("#ref").dataset.copy = `#${r.id} ${r.title || r.url}`;
+  const ok = /^https?:\/\//i.test(r.url || ""); $("#r-open").href = ok ? r.url : "#"; $("#r-open").style.visibility = ok ? "visible" : "hidden";
+}
+const updR = (fn) => { const r = res(rsel); if (r) { fn(r); syncResHead(r); save(); render(); } };
+$("#r-title").addEventListener("input", (e) => { fit(e.target); updR((r) => (r.title = e.target.value)); });
+$("#r-title").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#r-note").focus(); } });
+$("#r-url").addEventListener("input", (e) => updR((r) => (r.url = e.target.value.trim())));
+$("#r-status").addEventListener("change", (e) => updR((r) => (r.status = e.target.value)));
+$("#r-kind").addEventListener("change", (e) => updR((r) => (r.kind = e.target.value)));
+$("#r-area").addEventListener("change", (e) => updR((r) => (r.area = e.target.value)));
+$("#r-note").addEventListener("input", (e) => updR((r) => (r.note = e.target.value)));
+$("#r-decision").addEventListener("input", (e) => updR((r) => (r.decision = e.target.value)));
+
+$("#close").onclick = () => closePanel();
+$("#ref").onclick = (e) => copyRef(e.currentTarget.dataset.copy);
+
+/* ---------- Eliminar con deshacer ---------- */
+let undo = null, toastT = null;
+function toast(msg, onUndo) {
+  undo = onUndo; $("#toast-msg").textContent = msg; $("#toast-undo").hidden = !onUndo; $("#toast").classList.add("show");
+  clearTimeout(toastT); toastT = setTimeout(() => $("#toast").classList.remove("show"), 5000);
+}
+$("#toast-undo").onclick = () => { if (undo) undo(); undo = null; $("#toast").classList.remove("show"); };
+$("#del").onclick = () => {
+  const arr = sel ? S.cards : S.resources, id = sel || rsel;
+  const i = arr.findIndex((x) => x.id === id); if (i < 0) return;
+  const [x] = arr.splice(i, 1); save(); closePanel();
+  toast(`“${(x.title || "Sin título").slice(0, 40)}” eliminado`, () => { arr.splice(i, 0, x); save(); render(); });
+};
+
+/* ---------- Eventos del contenido ---------- */
+const main = $("#main");
+function addResource(text) {
+  text = text.trim(); if (!text) return;
+  const url = isUrl(text) ? (/^https?:/i.test(text) ? text : "https://" + text) : "";
+  const r = { id: nextId("r", S.resources), title: url ? "" : text, url, kind: url ? "Artículo" : "Idea", status: "evaluando",
+    area: filter.size === 1 ? [...filter][0] : "", note: "", decision: "", added: today() };
+  S.resources.unshift(r); rstatus = ""; save(); $("#res-input").value = ""; openRes(r.id, true);
+}
+main.addEventListener("submit", (e) => { if (e.target.id === "res-add") { e.preventDefault(); addResource($("#res-input").value); } });
+main.addEventListener("click", (e) => {
+  if (e.target.closest("a") || view === "flujos") return;
+  const seg = e.target.closest("#res-seg button"); if (seg) { rstatus = seg.dataset.s; render(); return; }
+  const ri = e.target.closest(".res-item"); if (ri) { openRes(ri.dataset.id); return; }
+  const add = e.target.closest(".add"); if (add) { composing = add.dataset.key + ":" + add.dataset.id; render(); return; }
+  const del = e.target.closest(".lane-del"); if (del) { delLane(del.dataset.kind, del.dataset.id); return; }
+  if (e.target.closest("#add-lane")) {
+    const id = uid();
+    if (view === "board") S.columns.push({ id, name: "Nueva columna" });
+    else S.phases.push({ id, name: "Nueva fase", goal: "" });
+    save(); render();
+    const inp = main.querySelector(`.lane-name[data-id="${id}"]`); inp.focus(); inp.select(); return;
+  }
+  const c = e.target.closest(".card"); if (c) openCard(c.dataset.id);
+});
+main.addEventListener("keydown", (e) => {
+  if (e.target.classList.contains("composer")) {
+    if (e.key === "Escape") { composing = null; render(); return; }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      const t = e.target.value.trim(), { key, id } = e.target.dataset;
+      let falta = "";
+      if (t && key === "col" && id === "definir") {
+        falta = (prompt("¿Qué falta decidir en esta tarjeta?\nSi ya está decidido, créala en «Listo para construir».") || "").trim();
+        if (!falta) { render(); return; }
+      }
+      if (t) {
+        const a = filter.size === 1 ? [...filter][0] : (S.areas[0] || {}).id;
+        S.cards.push({ id: nextId("c", S.cards), col: key === "col" ? id : S.columns[0].id, phase: key === "phase" ? id : "",
+          area: a, priority: "media", title: t, notes: falta ? "Falta decidir: " + falta : "", checklist: [] });
+        save();
+      }
+      render();
+    }
+    return;
+  }
+  if (e.target.matches(".lane-name, .lane-goal, .flow-title, .flow-desc") && (e.key === "Enter" || e.key === "Escape")) { e.preventDefault(); e.target.blur(); return; }
+  if (e.key === "Enter" && e.target.classList.contains("card")) openCard(e.target.dataset.id);
+  if (e.key === "Enter" && e.target.classList.contains("res-item")) openRes(e.target.dataset.id);
+});
+main.addEventListener("input", (e) => {
+  if (e.target.classList.contains("lane-goal")) { const p = S.phases.find((x) => x.id === e.target.dataset.id); if (p) { p.goal = e.target.value; save(); } }
+});
+main.addEventListener("focusout", (e) => {
+  if (e.target.classList.contains("composer")) setTimeout(() => { if (composing && !$(".composer:focus")) { composing = null; render(); } }, 120);
+  if (e.target.matches("input.lane-name")) {
+    const kind = e.target.dataset.kind, arr = kind === "col" ? S.columns : S.phases;
+    const l = arr.find((x) => x.id === e.target.dataset.id), v = e.target.value.trim();
+    if (!l) return;
+    if (!v) {
+      if (!canDel(kind, l)) { e.target.value = l.name; return; }
+      delLane(kind, l.id); return;
+    }
+    if (v !== l.name) { l.name = v; save(); }
+  }
+});
+
+/* Drag & drop */
+const marker = document.createElement("div"); marker.className = "drop-mark";
+main.addEventListener("dragstart", (e) => {
+  const c = e.target.closest(".card"); if (!c) return;
+  dragId = c.dataset.id; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragId);
+  requestAnimationFrame(() => c.classList.add("dragging"));
+});
+main.addEventListener("dragend", () => { dragId = null; marker.remove(); main.querySelectorAll(".over,.dragging").forEach((el) => el.classList.remove("over", "dragging")); });
+main.addEventListener("dragover", (e) => {
+  const lane = e.target.closest(".lane"); if (!lane || !dragId) return;
+  e.preventDefault();
+  main.querySelectorAll(".lane.over").forEach((l) => l !== lane && l.classList.remove("over"));
+  lane.classList.add("over");
+  const list = lane.querySelector(".cards");
+  const after = [...list.querySelectorAll(".card:not(.dragging)")].find((el) => {
+    const r = el.getBoundingClientRect(); return e.clientY < r.top + r.height / 2;
+  });
+  after ? list.insertBefore(marker, after) : list.appendChild(marker);
+});
+main.addEventListener("drop", (e) => {
+  const lane = e.target.closest(".lane"); if (!lane || !dragId) return;
+  e.preventDefault();
+  const nx = marker.nextElementSibling, next = nx && nx.classList.contains("card") ? nx.dataset.id : null;
+  const c = card(dragId), i = S.cards.indexOf(c);
+  if (lane.dataset.key === "col" && !setCol(c, lane.dataset.id)) { marker.remove(); render(); return; }
+  S.cards.splice(i, 1); c[lane.dataset.key] = lane.dataset.id;
+  const j = next ? S.cards.findIndex((x) => x.id === next) : -1;
+  j < 0 ? S.cards.push(c) : S.cards.splice(j, 0, c);
+  marker.remove(); save(); render();
+  if (sel === c.id) openCard(c.id);
+});
+
+/* ---------- Barra superior ---------- */
+document.querySelector(".tabs").addEventListener("click", (e) => { const t = e.target.closest(".tab"); if (t) setView(t.dataset.view); });
+$("#filters").addEventListener("click", (e) => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  const id = b.dataset.area; filter.has(id) ? filter.delete(id) : filter.add(id);
+  renderFilters(); render();
+});
+$("#q").addEventListener("input", (e) => { query = e.target.value.trim().toLowerCase(); render(); });
+function newItem() {
+  if (view === "recursos") { $("#res-input").focus(); return; }
+  if (view === "flujos") { addFlow(); return; }
+  composing = view === "board" ? "col:" + S.columns[0].id : "phase:" + ((S.phases[0] || {}).id || "");
+  render();
+}
+$("#new").onclick = newItem;
+$("#guide-btn").onclick = (e) => {
+  e.stopPropagation();
+  $("#guide-list").innerHTML = (S.guide || []).map((g) => `<li>${esc(g)}</li>`).join("") || "<li>Sin reglas definidas.</li>";
+  const open = $("#guide-pop").classList.toggle("open"); $("#guide-btn").setAttribute("aria-expanded", open);
+  if (open) { const r = $("#guide-btn").getBoundingClientRect(); $("#guide-pop").style.top = r.bottom + 8 + "px"; }
+};
+document.addEventListener("click", (e) => { if (!e.target.closest("#guide-pop")) { $("#guide-pop").classList.remove("open"); $("#guide-btn").setAttribute("aria-expanded", "false"); } });
+$("#export").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type: "application/json" }));
+  a.download = "plan.json"; a.click(); URL.revokeObjectURL(a.href);
+};
+const applyTheme = (t) => { t ? document.documentElement.setAttribute("data-theme", t) : document.documentElement.removeAttribute("data-theme"); };
+try { applyTheme(localStorage.getItem(LS + "-theme")); } catch {}
+$("#theme").onclick = () => {
+  const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  const t = dark ? "light" : "dark"; applyTheme(t); try { localStorage.setItem(LS + "-theme", t); } catch {}
+  if (view === "flujos") render();
+};
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (view === "flujos") render(); });
+
+document.addEventListener("keydown", (e) => {
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if (e.key === "Escape" && (sel || rsel)) {
+    if (typing && $("#panel").contains(document.activeElement)) { document.activeElement.blur(); return; }
+    if (!typing) return closePanel();
+  }
+  if (e.key === "Escape" && flowFull && view === "flujos" && !typing) { flowFull = false; autoFit = true; render(); return; }
+  if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === "/") { e.preventDefault(); $("#q").focus(); }
+  if (e.key === "n" || e.key === "N") { e.preventDefault(); newItem(); }
+  if (["1", "2", "3", "4"].includes(e.key)) setView(VIEWS[+e.key - 1]);
+});
+
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !inflight && !dirty) refresh(false); });
+
+/* ---------- Flujos ---------- */
+const flow = (id) => S.flows.find((f) => f.id === id);
+const visibleFlow = (f) => matchArea(f.area) && (!query || [f.title, f.description, f.source].join(" ").toLowerCase().includes(query));
+const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
+let flowFull = false, flowMore = false, autoFit = true;
+let Z = { k: 1, x: 0, y: 0 }, fittedFor = null, rid = 0, mmP = null, mmTheme = null, drawT = null;
+const svgCache = new Map();
+
+function flowsHTML() {
+  const list = S.flows.filter(visibleFlow);
+  if (!flow(fsel) || !list.includes(flow(fsel))) fsel = (list[0] || {}).id || null;
+  const f = flow(fsel);
+  const items = list.map((x) => {
+    const a = area(x.area);
+    return `<button class="flow-item" data-id="${x.id}" aria-current="${x.id === fsel}" style="--h:${a.hue}">
+      <span class="t">${esc(x.title || "Sin título")}</span>
+      <span class="m">${a.none ? "General" : `<span class="dot"></span>${esc(a.name)}`}${x.updated ? " · " + esc(x.updated) : ""}</span>
+    </button>`;
+  }).join("") || `<div class="flow-list-empty">${S.flows.length ? "Ningún flujo coincide." : "Sin flujos todavía."}</div>`;
+  const stage = !f
+    ? `<div class="flow-canvas"><div class="flow-msg"><b>Aquí verás los flujos</b>Pídele a Claude que diseñe uno contigo, o crea uno con “Nuevo flujo”.</div></div>`
+    : `<div class="flow-head${flowMore ? " more" : ""}">
+        <div class="flow-pickrow">
+          <select class="flow-pick" aria-label="Elegir flujo">${list.map((x) => `<option value="${x.id}"${x.id === fsel ? " selected" : ""}>${esc(x.title || "Sin título")}</option>`).join("")}<option value="__new">+ Nuevo flujo</option></select>
+          <button class="btn ghost icon" id="flow-more" aria-pressed="${flowMore}" title="Más opciones" aria-label="Más opciones"><svg class="i" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+        </div>
+        <div class="flow-titles">
+          <input class="flow-title" value="${esc(f.title)}" aria-label="Nombre del flujo" placeholder="Nombre del flujo">
+          <textarea class="flow-desc" rows="1" aria-label="Descripción" placeholder="Qué describe este flujo">${esc(f.description || "")}</textarea>
+        </div>
+        <div class="flow-tools">
+          <select class="flow-area" aria-label="Área">${opts(S.areas, "General")}</select>
+          <span class="sep"></span>
+          <button class="btn ghost icon" data-z="out" title="Alejar" aria-label="Alejar"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+          <span class="zoom-n" id="zoom-n">100%</span>
+          <button class="btn ghost icon" data-z="in" title="Acercar" aria-label="Acercar">${I.plus}</button>
+          <button class="btn ghost icon" data-z="fit" title="Ajustar a la pantalla" aria-label="Ajustar"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg></button>
+          <button class="btn ghost icon" id="flow-full" title="Pantalla completa" aria-label="Pantalla completa"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+          <span class="sep"></span>
+          <button class="ref" data-copy="#${f.id} ${esc(f.title)}" title="Copiar referencia para pedírselo a Claude">#${f.id}</button>
+          <button class="btn ghost${editing ? " on" : ""}" id="flow-edit" aria-pressed="${editing}"><svg class="i" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/></svg>Código</button>
+          <button class="btn ghost icon danger" id="flow-del" title="Eliminar flujo" aria-label="Eliminar flujo"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
+        </div>
+      </div>
+      ${flowLinksHTML(f)}
+      <div class="flow-body${editing ? " editing" : ""}">
+        <div class="flow-editor">
+          <textarea class="flow-src" spellcheck="false" aria-label="Código Mermaid del flujo">${esc(f.source || "")}</textarea>
+          <div class="flow-err" id="flow-err"></div>
+          <div class="flow-help">Sintaxis Mermaid: <code>flowchart LR</code>, <code>sequenceDiagram</code>, <code>stateDiagram-v2</code>…</div>
+        </div>
+        <div class="flow-canvas" id="canvas"><div class="flow-svg" id="fsvg"></div>
+          <div class="flow-float"><button class="btn icon" data-z="fit" title="Ajustar" aria-label="Ajustar"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg></button><button class="btn icon" id="flow-exit" title="Salir de pantalla completa" aria-label="Salir de pantalla completa"><svg class="i" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button></div></div>
+      </div>`;
+  return `<div class="flows"><nav class="flow-list" aria-label="Flujos">${items}
+    <button class="add" id="flow-add">${I.plus}Nuevo flujo</button></nav>
+    <section class="flow-stage">${stage}</section></div>`;
+}
+
+function flowLinksHTML(f) {
+  const linked = (f.cards ||= []).map(card).filter(Boolean), rest = S.cards.filter((c) => !f.cards.includes(c.id));
+  const chips = linked.map((c) => `<span class="link-chip${c.col === doneCol() ? " done" : ""}" style="--h:${area(c.area).hue}">
+      <button data-card="${c.id}" title="Abrir tarjeta"><span class="dot"></span><span class="tt">${esc(c.title)}</span><span class="st">${esc(colName(c.col))}${c.phase ? " · " + esc(phaseName(c.phase)) : ""}</span></button>
+      <button class="unlink" data-unlink="${c.id}" title="Desvincular" aria-label="Desvincular tarjeta">${I.x}</button></span>`).join("");
+  const opts = rest.map((c) => `<option value="${c.id}">${esc(c.title)}</option>`).join("");
+  return `<div class="flow-links"><span class="lbl">Tarjetas${linked.length ? " · " + linked.filter((c) => c.col === doneCol()).length + "/" + linked.length + " hechas" : ""}</span>${chips}
+    <select class="link-select" aria-label="Vincular tarjeta"><option value="">+ Vincular tarjeta…</option><option value="__new">Crear tarjeta nueva para este flujo</option>${opts ? `<optgroup label="Tarjetas existentes">${opts}</optgroup>` : ""}</select></div>`;
+}
+const cv = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+function hex(token) {
+  cv.clearRect(0, 0, 1, 1); cv.fillStyle = "#000";
+  cv.fillStyle = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  cv.fillRect(0, 0, 1, 1);
+  const [r, g, b] = cv.getImageData(0, 0, 1, 1).data;
+  return "#" + [r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("");
+}
+function initMermaid() {
+  const t = isDark() ? "dark" : "light"; if (mmTheme === t) return; mmTheme = t;
+  const c = { bg: hex("--bg"), lane: hex("--lane"), surf: hex("--surface"), line: hex("--line"), ink: hex("--ink"), ink2: hex("--ink-2"), ink3: hex("--ink-3"), acc: hex("--accent"), soft: hex("--accent-soft") };
+  mermaid.initialize({
+    startOnLoad: false, securityLevel: "strict", theme: "base",
+    fontFamily: getComputedStyle(document.body).fontFamily,
+    flowchart: { curve: "basis", padding: 14, nodeSpacing: 46, rankSpacing: 54 },
+    themeVariables: {
+      darkMode: t === "dark", fontSize: "14px", background: c.bg,
+      primaryColor: c.surf, mainBkg: c.surf, primaryTextColor: c.ink, textColor: c.ink, titleColor: c.ink,
+      primaryBorderColor: c.ink3, nodeBorder: c.ink3, lineColor: c.ink3,
+      secondaryColor: c.soft, tertiaryColor: c.lane, clusterBkg: c.lane, clusterBorder: c.line, edgeLabelBackground: c.bg,
+      actorBkg: c.surf, actorBorder: c.ink3, actorTextColor: c.ink, actorLineColor: c.line, signalColor: c.ink2, signalTextColor: c.ink,
+      labelBoxBkgColor: c.surf, labelBoxBorderColor: c.ink3, labelTextColor: c.ink, loopTextColor: c.ink2,
+      attributeBackgroundColorOdd: c.surf, attributeBackgroundColorEven: c.lane, rowOdd: c.surf, rowEven: c.lane,
+      noteBkgColor: c.soft, noteTextColor: c.ink, noteBorderColor: c.acc, activationBkgColor: c.soft, activationBorderColor: c.acc,
+    },
+  });
+}
+function loadMermaid() {
+  mmP ||= new Promise((ok, ko) => {
+    const sc = document.createElement("script"); sc.src = "vendor/mermaid.min.js";
+    sc.onload = ok; sc.onerror = () => { mmP = null; ko(new Error("No se pudo cargar Mermaid (plan/vendor/mermaid.min.js)")); };
+    document.head.appendChild(sc);
+  });
+  return mmP.then(initMermaid);
+}
+function flowMsg(html) {
+  const cvs = $("#canvas"); if (!cvs) return;
+  let el = cvs.querySelector(".flow-msg"); if (!html) { el && el.remove(); return; }
+  if (!el) { el = document.createElement("div"); el.className = "flow-msg"; cvs.appendChild(el); }
+  el.innerHTML = html;
+}
+async function drawFlow() {
+  const f = flow(fsel), box = $("#fsvg"); if (!f || !box) return;
+  const area = $(".flow-area"); if (area) area.value = f.area || "";
+  if (!f.source || !f.source.trim()) { box.innerHTML = ""; flowMsg("<b>Flujo vacío</b>Abre “Código” y escribe el diagrama."); return; }
+  const key = (isDark() ? "d|" : "l|") + f.source;
+  let svg = svgCache.get(key);
+  if (!svg) {
+    if (!box.innerHTML) flowMsg("Dibujando…");
+    try {
+      await loadMermaid();
+      await mermaid.parse(f.source);
+      const id = "mm" + ++rid;
+      try { svg = (await mermaid.render(id, f.source)).svg; } finally { document.getElementById("d" + id)?.remove(); document.getElementById(id)?.remove(); }
+      svgCache.set(key, svg);
+      const err = $("#flow-err"); if (err) err.textContent = "";
+    } catch (e) {
+      const msg = String((e && e.message) || e).split("\n").filter(Boolean).slice(0, 4).join(" · ");
+      const err = $("#flow-err"); if (err) err.textContent = msg;
+      if (!box.innerHTML) flowMsg(`<b>El diagrama tiene un error</b>${esc(msg)}`);
+      return;
+    }
+  }
+  if (flow(fsel) !== f || !box.isConnected) return;
+  flowMsg("");
+  box.innerHTML = svg;
+  const s = box.querySelector("svg"), vb = s.viewBox.baseVal;
+  if (vb && vb.width) { s.setAttribute("width", vb.width); s.setAttribute("height", vb.height); }
+  s.style.maxWidth = "none";
+  fittedFor === f.id && !autoFit ? applyZ() : fitView();
+  watchCanvas();
+}
+let canvasRO = null;
+function watchCanvas() {
+  const c = $("#canvas"); if (!c || !window.ResizeObserver) return;
+  canvasRO?.disconnect();
+  canvasRO = new ResizeObserver(() => { if (autoFit && $("#fsvg svg")) fitView(); });
+  canvasRO.observe(c);
+}
+function applyZ() {
+  const b = $("#fsvg"); if (b) b.style.transform = `translate(${Z.x}px, ${Z.y}px) scale(${Z.k})`;
+  const n = $("#zoom-n"); if (n) n.textContent = Math.round(Z.k * 100) + "%";
+}
+function fitView() {
+  const c = $("#canvas"), s = $("#fsvg svg"); if (!c || !s) return;
+  const w = +s.getAttribute("width") || s.getBoundingClientRect().width, h = +s.getAttribute("height") || s.getBoundingClientRect().height;
+  const cw = c.clientWidth, ch = c.clientHeight;
+  const pad = cw < 560 ? 24 : 64, k = Math.max(0.2, Math.min((cw - pad) / w, (ch - pad) / h, 1.4));
+  Z = { k, x: (cw - w * k) / 2, y: (ch - h * k) / 2 }; fittedFor = fsel; autoFit = true; applyZ();
+}
+function zoomAt(f, cx, cy) {
+  const c = $("#canvas"); if (!c) return;
+  if (cx == null) { cx = c.clientWidth / 2; cy = c.clientHeight / 2; }
+  autoFit = false;
+  const k = Math.min(4, Math.max(0.15, Z.k * f)), r = k / Z.k;
+  Z = { k, x: cx - (cx - Z.x) * r, y: cy - (cy - Z.y) * r }; applyZ();
+}
+function addFlow() {
+  const f = { id: nextId("fl", S.flows), title: "Nuevo flujo", area: filter.size === 1 ? [...filter][0] : "", description: "",
+    cards: [], source: "flowchart LR\n  A[Inicio] --> B{¿Decisión?}\n  B -->|Sí| C[Paso]\n  B -->|No| D[Otro paso]\n  C --> E[Fin]\n  D --> E", updated: today() };
+  S.flows.unshift(f); fsel = f.id; editing = true; fittedFor = null; save(); render();
+  const t = $(".flow-title"); t.focus(); t.select();
+}
+const touchFlow = (f) => { f.updated = today(); save(); };
+
+main.addEventListener("click", (e) => {
+  if (view !== "flujos") return;
+  const it = e.target.closest(".flow-item"); if (it) { if (it.dataset.id !== fsel) { fsel = it.dataset.id; fittedFor = null; autoFit = true; render(); } return; }
+  if (e.target.closest("#flow-add")) return addFlow();
+  if (e.target.closest("#flow-more")) { flowMore = !flowMore; render(); return; }
+  if (e.target.closest("#flow-full") || e.target.closest("#flow-exit")) { flowFull = !flowFull; editing = false; autoFit = true; render(); return; }
+  const rf = e.target.closest(".ref"); if (rf) return copyRef(rf.dataset.copy);
+  const oc = e.target.closest("[data-card]"); if (oc) return openCard(oc.dataset.card);
+  const ul = e.target.closest("[data-unlink]"); if (ul) { const f = flow(fsel); f.cards = f.cards.filter((x) => x !== ul.dataset.unlink); touchFlow(f); render(); return; }
+  const z = e.target.closest("[data-z]"); if (z) { z.dataset.z === "fit" ? fitView() : zoomAt(z.dataset.z === "in" ? 1.25 : 0.8); return; }
+  if (e.target.closest("#flow-edit")) { editing = !editing; render(); if (editing) $(".flow-src").focus(); return; }
+  if (e.target.closest("#flow-del")) {
+    const i = S.flows.findIndex((x) => x.id === fsel); if (i < 0) return;
+    const [f] = S.flows.splice(i, 1); fsel = null; save(); render();
+    toast(`Flujo “${(f.title || "Sin título").slice(0, 40)}” eliminado`, () => { S.flows.splice(i, 0, f); fsel = f.id; fittedFor = null; save(); render(); });
+  }
+});
+main.addEventListener("input", (e) => {
+  if (view !== "flujos") return;
+  const f = flow(fsel); if (!f) return;
+  if (e.target.classList.contains("flow-title")) { f.title = e.target.value; touchFlow(f); const t = main.querySelector(`.flow-item[data-id="${f.id}"] .t`); if (t) t.textContent = f.title || "Sin título"; }
+  if (e.target.classList.contains("flow-desc")) { fit(e.target); f.description = e.target.value; touchFlow(f); }
+  if (e.target.classList.contains("flow-src")) { f.source = e.target.value; touchFlow(f); clearTimeout(drawT); drawT = setTimeout(drawFlow, 300); }
+});
+main.addEventListener("change", (e) => {
+  if (view === "flujos" && e.target.classList.contains("flow-pick")) {
+    if (e.target.value === "__new") return addFlow();
+    fsel = e.target.value; fittedFor = null; autoFit = true; render(); return;
+  }
+  if (view === "flujos" && e.target.classList.contains("flow-area")) { const f = flow(fsel); f.area = e.target.value; touchFlow(f); render(); }
+  if (view === "flujos" && e.target.classList.contains("link-select") && e.target.value) {
+    const f = flow(fsel), v = e.target.value;
+    if (v === "__new") {
+      const c = { id: nextId("c", S.cards), col: S.columns[0].id, phase: "", area: f.area || (S.areas[0] || {}).id, priority: "media", title: f.title, notes: "Del flujo: " + f.title, checklist: [] };
+      S.cards.push(c); f.cards.push(c.id); touchFlow(f); openCard(c.id);
+      setTimeout(() => { $("#p-title").focus(); $("#p-title").select(); }, 60);
+    } else { f.cards.push(v); touchFlow(f); render(); }
+  }
+});
+main.addEventListener("keydown", (e) => {
+  if (e.key === "Tab" && e.target.classList.contains("flow-src")) {
+    e.preventDefault(); const t = e.target, a = t.selectionStart;
+    t.setRangeText("  ", a, t.selectionEnd, "end"); t.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+});
+let pan = null, pinch = null;
+const ptrs = new Map();
+const pinchState = () => {
+  const [a, b] = [...ptrs.values()], r = $("#canvas").getBoundingClientRect();
+  return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, cx: (a.x + b.x) / 2 - r.left, cy: (a.y + b.y) / 2 - r.top };
+};
+main.addEventListener("pointerdown", (e) => {
+  const c = e.target.closest("#canvas"); if (!c || e.button !== 0 || e.target.closest(".flow-float")) return;
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); c.setPointerCapture(e.pointerId);
+  if (ptrs.size === 2) { pan = null; pinch = pinchState(); }
+  else if (ptrs.size === 1) { pan = { x: e.clientX - Z.x, y: e.clientY - Z.y }; c.classList.add("panning"); }
+});
+main.addEventListener("pointermove", (e) => {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && ptrs.size === 2) {
+    const n = pinchState();
+    Z.x += n.cx - pinch.cx; Z.y += n.cy - pinch.cy; applyZ();
+    zoomAt(n.d / pinch.d, n.cx, n.cy); pinch = n; return;
+  }
+  if (pan) { autoFit = false; Z.x = e.clientX - pan.x; Z.y = e.clientY - pan.y; applyZ(); }
+});
+const endPtr = (e) => {
+  ptrs.delete(e.pointerId);
+  if (ptrs.size < 2) pinch = null;
+  if (ptrs.size === 1) { const [p] = ptrs.values(); pan = { x: p.x - Z.x, y: p.y - Z.y }; }
+  if (!ptrs.size) { pan = null; $("#canvas")?.classList.remove("panning"); }
+};
+main.addEventListener("pointerup", endPtr);
+main.addEventListener("pointercancel", endPtr);
+main.addEventListener("wheel", (e) => {
+  const c = e.target.closest("#canvas"); if (!c) return;
+  e.preventDefault();
+  if (e.ctrlKey || e.metaKey) { const r = c.getBoundingClientRect(); zoomAt(Math.exp(-e.deltaY * 0.01), e.clientX - r.left, e.clientY - r.top); }
+  else { autoFit = false; Z.x -= e.deltaX; Z.y -= e.deltaY; applyZ(); }
+}, { passive: false });
+addEventListener("resize", () => { if (view === "flujos" && fittedFor) applyZ(); });
+
+const fromHash = location.hash.slice(1);
+let saved = null; try { saved = localStorage.getItem(LS + "-view"); } catch {}
+view = VIEWS.includes(fromHash) ? fromHash : VIEWS.includes(saved) ? saved : "board";
+load().then(() => { renderFilters(); render(); listen(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "project": "planner",
+  "columns": [
+    {
+      "id": "ideas",
+      "name": "Ideas"
+    },
+    {
+      "id": "definir",
+      "name": "Por definir"
+    },
+    {
+      "id": "listo",
+      "name": "Listo para construir"
+    },
+    {
+      "id": "curso",
+      "name": "En curso"
+    },
+    {
+      "id": "hecho",
+      "name": "Hecho"
+    }
+  ],
+  "areas": [],
+  "cards": [],
+  "updated": "2026-11-07T22:19:02.615Z",
+  "phases": [],
+  "resources": [],
+  "flows": [],
+  "guide": [
+    "Por definir = SOLO lo que espera una decisión del usuario. Lo ya decidido va a Listo para construir.",
+    "Toda tarjeta en Por definir lleva en sus notas una línea «Falta decidir: …».",
+    "El orden de construcción lo da la fase del roadmap, no la columna.",
+    "Decisiones del usuario = recursos con estado adoptado; propuestas sin confirmar = evaluando.",
+    "No inventar decisiones: si algo no se ha dicho, va a Por definir con «Falta decidir».",
+    "Después de editar el plan, ejecutar: node plan/cli.js validar"
+  ]
+}
