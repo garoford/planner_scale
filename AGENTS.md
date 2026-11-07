@@ -58,3 +58,12 @@ CLI (`node plan/cli.js …`, desde la raíz del proyecto):
 Al planificar con el usuario: crea o ajusta tarjetas, fases, recursos y flujos para que lo vea en la página al momento.
 Al ejecutar una tarjeta: `mover <id> curso` → hacer el trabajo en el código del proyecto → `check` de cada paso →
 `nota <id> "qué se hizo / dónde"` → `mover <id> hecho`. Si surge trabajo nuevo, `nueva` en lugar de hacerlo sin registrar.
+
+## Reparto de roles (Claude planifica, opencode construye)
+- **Claude Code (Opus)**: planifica. Diseña flujos, crea y ajusta tarjetas en `data/plan.json` con un checklist
+  de pasos concretos y en `notes` el detalle técnico (archivos, criterios de aceptación). No escribe el código del producto.
+- **opencode (DeepSeek V4.1 Flash)**: construye. Recibe «ejecuta #cN», lee `node plan/cli.js ver cN` y sigue el ciclo
+  `mover curso` → código → `check` de cada paso → `nota` → `mover hecho`. Si algo no está claro o falta decidir,
+  no improvisa: `nota cN "Duda: …"` y se detiene.
+- Delegar desde Claude: `rc prompt <id-opencode> "Ejecuta #cN siguiendo AGENTS.md" --wait 0` (en segundo plano);
+  luego Claude revisa el diff y el estado de la tarjeta.
